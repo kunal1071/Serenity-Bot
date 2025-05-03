@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mental Health Assessment - MindWell</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.2.0/flowbite.min.css" rel="stylesheet" />
+    <style>
+        .gradient-text {
+            background: linear-gradient(90deg, #4f46e5, #ec4899);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .form-section {
+            border-left: 4px solid #4f46e5;
+        }
+        
+        .range-value {
+            position: absolute;
+            right: 0;
+            top: 0;
+        }
+        
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(255, 255, 255, 0.9);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s, visibility 0.3s;
+        }
+        
+        .loading-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        .spinner {
+            width: 60px;
+            height: 60px;
+            border: 5px solid #e6e6e6;
+            border-radius: 50%;
+            border-top-color: #4f46e5;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+        
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+        
+        .progress-container {
+            width: 300px;
+            height: 8px;
+            background-color: #e6e6e6;
+            border-radius: 4px;
+            margin-top: 15px;
+            overflow: hidden;
+        }
+        
+        .progress-bar {
+            height: 100%;
+            width: 0;
+            background: linear-gradient(90deg, #4f46e5, #ec4899);
+            transition: width 0.5s;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loading-overlay">
+        <div class="spinner"></div>
+        <h2 class="text-xl font-semibold text-indigo-600 mb-2">Processing Your Assessment</h2>
+        <p class="text-gray-600 mb-4">Please wait while our MLs analyzes your responses...</p>
+        <div class="progress-container">
+            <div class="progress-bar" id="progress-bar"></div>
+        </div>
+    </div>
+
+    <!-- Header/Navigation -->
+    <header class="bg-white shadow-sm">
+        <nav class="container mx-auto px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center">
+                <a href="{{ url_for('index') }}" class="text-2xl font-bold gradient-text">MindWell</a>
+            </div>
+            <div class="hidden md:flex space-x-6">
+                <a href="{{ url_for('index') }}" class="text-gray-600 hover:text-indigo-600 font-medium">Home</a>
+                <a href="{{ url_for('about') }}" class="text-gray-600 hover:text-indigo-600 font-medium">About</a>
+                <a href="{{ url_for('dashboard') }}" class="text-gray-600 hover:text-indigo-600 font-medium">Dashboard</a>
+                <a href="{{ url_for('predict') }}" class="text-indigo-600 hover:text-indigo-800 font-medium">Assessment</a>
+                <a href="{{ url_for('logout') }}" class="text-gray-600 hover:text-indigo-600 font-medium">Logout</a>
+            </div>
+            <button class="md:hidden focus:outline-none" id="mobile-menu-button">
+                <svg class="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path>
+                </svg>
+            </button>
+        </nav>
+        
+        <!-- Mobile menu -->
+        <div class="md:hidden hidden bg-white w-full py-2 px-4 mt-1 shadow-lg rounded-b-lg" id="mobile-menu">
+            <a href="{{ url_for('index') }}" class="block py-2 text-gray-600 hover:text-indigo-600 font-medium">Home</a>
+            <a href="{{ url_for('about') }}" class="block py-2 text-gray-600 hover:text-indigo-600 font-medium">About</a>
+            <a href="{{ url_for('dashboard') }}" class="block py-2 text-gray-600 hover:text-indigo-600 font-medium">Dashboard</a>
+            <a href="{{ url_for('predict') }}" class="block py-2 text-indigo-600 hover:text-indigo-800 font-medium">Assessment</a>
+            <a href="{{ url_for('logout') }}" class="block py-2 text-gray-600 hover:text-indigo-600 font-medium">Logout</a>
+        </div>
+    </header>
+
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="container mx-auto px-4 mt-4">
+                {% for category, message in messages %}
+                    {% set alert_color = 'blue' %}
+                    {% if category == 'success' %}
+                        {% set alert_color = 'green' %}
+                    {% elif category == 'danger' %}
+                        {% set alert_color = 'red' %}
+                    {% elif category == 'warning' %}
+                        {% set alert_color = 'yellow' %}
+                    {% endif %}
+                    <div class="p-4 mb-4 text-sm rounded-lg bg-{{ alert_color }}-50 text-{{ alert_color }}-800" role="alert">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    <!-- Main Content -->
+    <div class="container mx-auto px-4 py-8">
+        <div class="max-w-4xl mx-auto">
+            <div class="text-center mb-8">
+                <h1 class="text-3xl font-bold mb-2">Mental Health Assessment</h1>
+                <p class="text-gray-600">Answer the questions below honestly to receive personalized insights and recommendations.</p>
+            </div>
+            
+            <div class="bg-white p-8 rounded-lg shadow-md">
+                <form action="{{ url_for('predict') }}" method="post" class="space-y-8" id="assessment-form">
+                    <!-- Personal Information Section -->
+                    <div class="form-section pl-4 pb-2">
+                        <h2 class="text-xl font-semibold mb-4">Personal Information</h2>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label for="gender" class="block text-gray-700 text-sm font-medium mb-2">Gender</label>
+                                <select id="gender" name="gender" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
+                                    <option value="Male">Male</option>
+                                    <option value="Female">Female</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label for="age" class="block text-gray-700 text-sm font-medium mb-2">Age</label>
+                                <input type="number" id="age" name="age" min="10" max="100" value="22" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
+                            </div>
+                            <div>
+                                <label for="city" class="block text-gray-700 text-sm font-medium mb-2">City</label>
+                                <select id="city" name="city" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
+                                    <option value="Mumbai">Mumbai</option>
+                                    <option value="Delhi">Delhi</option>
+                                    <option value="Bangalore">Bangalore</option>
+                                    <option value="Hyderabad">Hyderabad</option>
+                                    <option value="Chennai">Chennai</option>
+                                    <option value="Kolkata">Kolkata</option>
+                                    <option value="Pune">Pune</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label for="profession" class="block text-gray-700 text-sm font-medium mb-2">Profession</label>
+                                <select id="profession" name="profession" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
+                                    <option value="Student" selected>Student</option>
+                                    <option value="Doctor">Doctor</option>
+                                    <option value="Civil Engineer">Engineer</option>
+                                    <option value="Teacher">Teacher</option>
+                                    <option value="Manager">Manager</option>
+                                    <option value="Entrepreneur">Entrepreneur</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Academic/Work Section -->
+                    <div class="form-section pl-4 pb-2">
+                        <h2 class="text-xl font-semibold mb-4">Academic & Work Information</h2>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label for="degree" class="block text-gray-700 text-sm font-medium mb-2">Degree</label>
+                                <select id="degree" name="degree" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
+                                    <option value="B.Tech">B.Tech</option>
+                                    <option value="B.Sc">B.Sc</option>
+                                    <option value="M.Tech">M.Tech</option>
+                                    <option value="MCA">MCA</option>
+                                    <option value="B.Com">B.Com</option>
+                                    <option value="MA">MA</option>
+                                    <option value="MSc">MSc</option>
+                                    <option value="MBA">MBA</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label for="cgpa" class="block text-gray-700 text-sm font-medium mb-2">CGPA (0-10)</label>
+                                <input type="number" id="cgpa" name="cgpa" min="0" max="10" step="0.1" value="7.5" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
+                            </div>
+                            <div>
+                                <label for="work_study_hours" class="block text-gray-700 text-sm font-medium mb-2">Daily Work/Study Hours</label>
+                                <input type="number" id="work_study_hours" name="work_study_hours" min="0" max="24" value="6" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
+                            </div>
+                            <div>
+                                <label for="dietary_habits" class="block text-gray-700 text-sm font-medium mb-2">Dietary Habits</label>
+                                <select id="dietary_habits" name="dietary_habits" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
+                                    <option value="Healthy">Healthy</option>
+                                    <option value="Moderate" selected>Moderate</option>
+                                    <option value="Unhealthy">Unhealthy</option>
+                                    <option value="Others">Others</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Mental Health Indicators Section -->
+                    <div class="form-section pl-4 pb-2">
+                        <h2 class="text-xl font-semibold mb-4">Mental Health Indicators</h2>
+                        <div class="grid grid-cols-1 gap-6">
+                            <div class="relative">
+                                <label for="academic_pressure" class="block text-gray-700 text-sm font-medium mb-2">Academic Pressure (1-10)</label>
+                                <input type="range" id="academic_pressure" name="academic_pressure" min="1" max="10" value="5" 
+                                       class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer" 
+                                       oninput="this.nextElementSibling.innerText = this.value">
+                                <span class="text-sm text-indigo-600 mt-1 block">5</span>
+                            </div>
+                            
+                            <div class="relative">
+                                <label for="work_pressure" class="block text-gray-700 text-sm font-medium mb-2">Work Pressure (1-10)</label>
+                                <input type="range" id="work_pressure" name="work_pressure" min="1" max="10" value="4" 
+                                       class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer" 
+                                       oninput="this.nextElementSibling.innerText = this.value">
+                                <span class="text-sm text-indigo-600 mt-1 block">4</span>
+                            </div>
+                            
+                            <div class="relative">
+                                <label for="study_satisfaction" class="block text-gray-700 text-sm font-medium mb-2">Study Satisfaction (1-5)</label>
+                                <input type="range" id="study_satisfaction" name="study_satisfaction" min="1" max="5" value="3" 
+                                       class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer" 
+                                       oninput="this.nextElementSibling.innerText = this.value">
+                                <span class="text-sm text-indigo-600 mt-1 block">3</span>
+                            </div>
+                            
+                            <div class="relative">
+                                <label for="job_satisfaction" class="block text-gray-700 text-sm font-medium mb-2">Job Satisfaction (1-5)</label>
+                                <input type="range" id="job_satisfaction" name="job_satisfaction" min="1" max="5" value="3" 
+                                       class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer" 
+                                       oninput="this.nextElementSibling.innerText = this.value">
+                                <span class="text-sm text-indigo-600 mt-1 block">3</span>
+                            </div>
+                            
+                            <div class="relative">
+                                <label for="financial_stress" class="block text-gray-700 text-sm font-medium mb-2">Financial Stress (1-5)</label>
+                                <input type="range" id="financial_stress" name="financial_stress" min="1" max="5" value="3" 
+                                       class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer" 
+                                       oninput="this.nextElementSibling.innerText = this.value">
+                                <span class="text-sm text-indigo-600 mt-1 block">3</span>
+                            </div>
+                        </div>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+                            <div>
+                                <label for="sleep_duration" class="block text-gray-700 text-sm font-medium mb-2">Sleep Duration</label>
+                                <select id="sleep_duration" name="sleep_duration" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
+                                    <option value="Less than 5 hours">Less than 5 hours</option>
+                                    <option value="5-6 hours" selected>5-6 hours</option>
+                                    <option value="7-8 hours">7-8 hours</option>
+                                    <option value="More than 8 hours">More than 8 hours</option>
+                                </select>
+                            </div>
+                            
+                            <div>
+                                <label for="suicidal_thoughts" class="block text-gray-700 text-sm font-medium mb-2">Have you ever had suicidal thoughts?</label>
+                                <select id="suicidal_thoughts" name="suicidal_thoughts" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
+                                    <option value="No" selected>No</option>
+                                    <option value="Yes">Yes</option>
+                                </select>
+                            </div>
+                            
+                            <div>
+                                <label for="family_history" class="block text-gray-700 text-sm font-medium mb-2">Family History of Mental Illness</label>
+                                <select id="family_history" name="family_history" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
+                                    <option value="No" selected>No</option>
+                                    <option value="Yes">Yes</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Submit Section -->
+                    <div class="text-center pt-4">
+                        <p class="text-sm text-gray-500 mb-4">Your data is protected and will only be used to generate personalized recommendations.</p>
+                        <button type="submit" class="px-6 py-3 bg-indigo-600 text-white font-medium rounded-lg shadow-md hover:bg-indigo-700 transition duration-300 ease-in-out">
+                            Get My Assessment Results
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-white py-6 mt-8">
+        <div class="container mx-auto px-4">
+            <div class="text-center">
+                <p class="text-gray-400">© 2025 KS! All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.2.0/flowbite.min.js"></script>
+    <script>
+        // Mobile menu toggle
+        document.getElementById('mobile-menu-button').addEventListener('click', function() {
+            const menu = document.getElementById('mobile-menu');
+            menu.classList.toggle('hidden');
+        });
+        
+        // Form submission and loading animation
+        document.getElementById('assessment-form').addEventListener('submit', function(e) {
+            const loadingOverlay = document.getElementById('loading-overlay');
+            const progressBar = document.getElementById('progress-bar');
+            
+            loadingOverlay.classList.add('active');
+            
+            // Simulate progress
+            let progress = 0;
+            const interval = setInterval(function() {
+                progress += Math.random() * 15;
+                if (progress > 95) progress = 95; // Save the last 5% for server response
+                progressBar.style.width = progress + '%';
+                
+                if (progress >= 95) {
+                    clearInterval(interval);
+                }
+            }, 800);
+        });
+    </script>
+</body>
+</html>

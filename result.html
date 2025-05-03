@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Assessment Results - MindWell</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.2.0/flowbite.min.css" rel="stylesheet" />
+    <!-- Add markdown parser library -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        .gradient-text {
+            background: linear-gradient(90deg, #4f46e5, #ec4899);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .depressed-card {
+            border-left: 6px solid #ef4444;
+        }
+        
+        .not-depressed-card {
+            border-left: 6px solid #10b981;
+        }
+        
+        /* Markdown styling */
+        .markdown-content h3 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-top: 1.5rem;
+            margin-bottom: 0.75rem;
+            color: #4f46e5;
+        }
+        
+        .markdown-content h4 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-top: 1.25rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .markdown-content p {
+            margin-bottom: 1rem;
+            line-height: 1.6;
+        }
+        
+        .markdown-content ul, .markdown-content ol {
+            margin-left: 1.5rem;
+            margin-bottom: 1rem;
+        }
+        
+        .markdown-content li {
+            margin-bottom: 0.5rem;
+        }
+        
+        .markdown-content strong {
+            font-weight: 600;
+        }
+        
+        .markdown-content blockquote {
+            border-left: 4px solid #e5e7eb;
+            padding-left: 1rem;
+            font-style: italic;
+            margin: 1rem 0;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Header/Navigation -->
+    <header class="bg-white shadow-sm">
+        <nav class="container mx-auto px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center">
+                <a href="{{ url_for('index') }}" class="text-2xl font-bold gradient-text">MindWell</a>
+            </div>
+            <div class="hidden md:flex space-x-6">
+                <a href="{{ url_for('index') }}" class="text-gray-600 hover:text-indigo-600 font-medium">Home</a>
+                <a href="{{ url_for('about') }}" class="text-gray-600 hover:text-indigo-600 font-medium">About</a>
+                <a href="{{ url_for('dashboard') }}" class="text-gray-600 hover:text-indigo-600 font-medium">Dashboard</a>
+                <a href="{{ url_for('predict') }}" class="text-indigo-600 hover:text-indigo-800 font-medium">Assessment</a>
+                <a href="{{ url_for('logout') }}" class="text-gray-600 hover:text-indigo-600 font-medium">Logout</a>
+            </div>
+            <button class="md:hidden focus:outline-none" id="mobile-menu-button">
+                <svg class="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path>
+                </svg>
+            </button>
+        </nav>
+        
+        <!-- Mobile menu -->
+        <div class="md:hidden hidden bg-white w-full py-2 px-4 mt-1 shadow-lg rounded-b-lg" id="mobile-menu">
+            <a href="{{ url_for('index') }}" class="block py-2 text-gray-600 hover:text-indigo-600 font-medium">Home</a>
+            <a href="{{ url_for('about') }}" class="block py-2 text-gray-600 hover:text-indigo-600 font-medium">About</a>
+            <a href="{{ url_for('dashboard') }}" class="block py-2 text-gray-600 hover:text-indigo-600 font-medium">Dashboard</a>
+            <a href="{{ url_for('predict') }}" class="block py-2 text-indigo-600 hover:text-indigo-800 font-medium">Assessment</a>
+            <a href="{{ url_for('logout') }}" class="block py-2 text-gray-600 hover:text-indigo-600 font-medium">Logout</a>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <div class="container mx-auto px-4 py-12">
+        <div class="max-w-4xl mx-auto">
+            <div class="mb-8 text-center">
+                <h1 class="text-3xl font-bold mb-2">Your Mental Health Assessment Results</h1>
+                <p class="text-gray-600">Based on your responses, our AI has generated personalized insights and recommendations.</p>
+            </div>
+            
+            <div class="bg-white p-8 rounded-lg shadow-lg mb-8 {% if result == 'Depressed' %}depressed-card{% else %}not-depressed-card{% endif %}">
+                <div class="mb-6">
+                    <h2 class="text-xl font-semibold mb-3">Assessment Result</h2>
+                    {% if result == 'Depressed' %}
+                        <div class="bg-red-50 text-red-800 px-4 py-3 rounded-lg">
+                            <div class="flex">
+                                <div class="flex-shrink-0">
+                                    <svg class="h-5 w-5 text-red-500" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>
+                                    </svg>
+                                </div>
+                                <div class="ml-3">
+                                    <p class="text-lg font-medium">Signs of Depression Detected</p>
+                                    <p class="text-sm mt-1">Based on your responses, our model suggests you may be experiencing symptoms associated with depression.</p>
+                                </div>
+                            </div>
+                        </div>
+                        <p class="mt-4 text-gray-700">This assessment is not a medical diagnosis. If you're concerned about your mental health, please consider consulting with a healthcare professional.</p>
+                    {% else %}
+                        <div class="bg-green-50 text-green-800 px-4 py-3 rounded-lg">
+                            <div class="flex">
+                                <div class="flex-shrink-0">
+                                    <svg class="h-5 w-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                                    </svg>
+                                </div>
+                                <div class="ml-3">
+                                    <p class="text-lg font-medium">No Significant Signs of Depression</p>
+                                    <p class="text-sm mt-1">Based on your responses, our model indicates you're likely not experiencing significant symptoms of depression.</p>
+                                </div>
+                            </div>
+                        </div>
+                        <p class="mt-4 text-gray-700">Remember that mental health can change over time. Regular self-assessment and maintaining healthy habits are important for your wellbeing.</p>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="bg-white p-8 rounded-lg shadow-lg mb-8">
+                <h2 class="text-xl font-semibold mb-6">Personalized AI Recommendations</h2>
+                
+                <div class="prose prose-indigo max-w-none markdown-content" id="recommendations-content">
+                    <!-- Content will be rendered by JavaScript -->
+                </div>
+            </div>
+            
+            <div class="flex justify-between space-x-4">
+                <a href="{{ url_for('dashboard') }}" class="flex-1 px-6 py-3 bg-gray-600 text-white text-center font-medium rounded-lg shadow-md hover:bg-gray-700 transition duration-300 ease-in-out">
+                    Back to Dashboard
+                </a>
+                <a href="{{ url_for('predict') }}" class="flex-1 px-6 py-3 bg-indigo-600 text-white text-center font-medium rounded-lg shadow-md hover:bg-indigo-700 transition duration-300 ease-in-out">
+                    Take Another Assessment
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-white py-6 mt-8">
+        <div class="container mx-auto px-4">
+            <div class="text-center">
+                <p class="text-gray-400">© 2025 KS! All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.2.0/flowbite.min.js"></script>
+    <script>
+        // Mobile menu toggle
+        document.getElementById('mobile-menu-button').addEventListener('click', function() {
+            const menu = document.getElementById('mobile-menu');
+            menu.classList.toggle('hidden');
+        });
+        
+        // Parse and render markdown
+        document.addEventListener('DOMContentLoaded', function() {
+            // Get the raw content and properly decode HTML entities
+            const rawContent = decodeHtml(`{{ recommendations|safe }}`);
+            // Parse the markdown
+            const parsedContent = marked.parse(rawContent);
+            // Set the HTML content
+            document.getElementById('recommendations-content').innerHTML = parsedContent;
+        });
+        
+        // Helper function to decode HTML entities
+        function decodeHtml(html) {
+            const textarea = document.createElement('textarea');
+            textarea.innerHTML = html;
+            return textarea.value;
+        }
+    </script>
+</body>
+</html>
